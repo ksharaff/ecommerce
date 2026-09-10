@@ -43,6 +43,7 @@ out/
 docker-compose.override.yml
 application-local.properties
 application-*.local.properties
+docker-compose.yml
 
 ### Logs ###
 *.log
