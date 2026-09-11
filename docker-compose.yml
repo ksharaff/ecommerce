@@ -1,5 +1,20 @@
 services:
 
+  kafka:
+    image: apache/kafka:latest
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093,CONTROLLER://localhost:9094
+      KAFKA_ADVERTISED_LISTENERS: HOST://localhost:9092,DOCKER://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: HOST:PLAINTEXT,DOCKER:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9094
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
 # Product Database
   product-db:
     image: postgres:16
@@ -51,24 +66,22 @@ services:
       timeout: 5s
       retries: 5
 
-# Product Service
-  product-service:
-    build: ./product-service
-    ports:
-      - "8080:8080"
+  # Payment Database
+  payment-db:
+    image: postgres:16
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://product-db:5432/productdb
-      SPRING_DATASOURCE_USERNAME: product_user
-      SPRING_DATASOURCE_PASSWORD: devpassword
+      POSTGRES_DB: paymentdb
+      POSTGRES_USER: payment_service_user
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5436:5432"
+    volumes:
+      - payment-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/8080"]
+      test: ["CMD-SHELL", "pg_isready -U payment_service_user -d paymentdb"]
       interval: 5s
       timeout: 5s
       retries: 5
-      start_period: 40s
-    depends_on:
-      product-db:
-        condition: service_healthy
 
 # User Service
   user-service:
@@ -100,6 +113,7 @@ services:
       DB_PASSWORD: devpassword
       SERVICES_PRODUCT-SERVICE_BASE-URL: http://product-service:8080
       SERVICES_USER-SERVICE_BASE-URL: http://user-service:8081
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
     healthcheck:
       test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/8082"]
       interval: 5s
@@ -114,22 +128,45 @@ services:
       user-service:
         condition: service_healthy
 
+  # Product Service
+  product-service:
+    build: ./product-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://product-db:5432/productdb
+      SPRING_DATASOURCE_USERNAME: product_user
+      SPRING_DATASOURCE_PASSWORD: devpassword
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/8080"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    depends_on:
+      product-db:
+        condition: service_healthy
+
+  # Payment Service      
+  payment-service:
+    build: ./payment-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/paymentdb
+      SPRING_DATASOURCE_USERNAME: payment_service_user
+      SPRING_DATASOURCE_PASSWORD: devpassword
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
 volumes:
   product-db-data:
   user-db-data:
   order-db-data:
+  payment-db-data:
 
-  kafka:
-    image: apache/kafka:latest
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093,CONTROLLER://localhost:9094
-      KAFKA_ADVERTISED_LISTENERS: HOST://localhost:9092,DOCKER://kafka:9093
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: HOST:PLAINTEXT,DOCKER:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9094
-      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1

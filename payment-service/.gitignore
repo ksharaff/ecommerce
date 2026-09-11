@@ -35,20 +35,3 @@ out/
 
 ### VS Code ###
 .vscode/
-
-### Local configuration and secrets ###
-.env
-.env.*
-!.env.example
-docker-compose.override.yml
-application-local.properties
-application-*.local.properties
-.claude/settings.local.json
-
-### Logs ###
-*.log
-logs/
-
-### Operating system files ###
-.DS_Store
-Thumbs.db

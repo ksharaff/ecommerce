@@ -1,27 +1,36 @@
 package com.khaled.ecommerce.service;
 
-import com.khaled.ecommerce.orderservice.client.*;
-import com.khaled.ecommerce.orderservice.model.Order;
-import com.khaled.ecommerce.orderservice.repository.OrderRepository;
-import com.khaled.ecommerce.orderservice.service.InsufficientStockException;
-import com.khaled.ecommerce.orderservice.service.OrderItemRequest;
-import com.khaled.ecommerce.orderservice.service.OrderNotFoundException;
-import com.khaled.ecommerce.orderservice.service.OrderService;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.khaled.ecommerce.orderservice.client.ProductClientResponse;
+import com.khaled.ecommerce.orderservice.client.ProductNotFoundException;
+import com.khaled.ecommerce.orderservice.client.ProductServiceClient;
+import com.khaled.ecommerce.orderservice.client.ServiceUnavailableException;
+import com.khaled.ecommerce.orderservice.client.UserClientResponse;
+import com.khaled.ecommerce.orderservice.client.UserNotFoundException;
+import com.khaled.ecommerce.orderservice.client.UserServiceClient;
+import com.khaled.ecommerce.orderservice.messaging.OrderEventPublisher;
+import com.khaled.ecommerce.orderservice.model.Order;
+import com.khaled.ecommerce.orderservice.repository.OrderRepository;
+import com.khaled.ecommerce.orderservice.service.InsufficientStockException;
+import com.khaled.ecommerce.orderservice.service.OrderItemRequest;
+import com.khaled.ecommerce.orderservice.service.OrderNotFoundException;
+import com.khaled.ecommerce.orderservice.service.OrderService;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -34,6 +43,9 @@ class OrderServiceTest {
 
     @Mock
     private UserServiceClient userServiceClient;
+
+    @Mock
+    private OrderEventPublisher eventPublisher;
 
     @InjectMocks
     private OrderService orderService;
