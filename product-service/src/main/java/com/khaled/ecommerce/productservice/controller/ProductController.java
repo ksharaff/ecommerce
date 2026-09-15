@@ -76,5 +76,13 @@ public class ProductController {
         return ResponseEntity.noContent().build(); // 204 No content -- successful
     }
 
+    @GetMapping("/search")
+    // Note this must NOT collide with @GetMapping("/{id}") - Spring matches literal paths before
+    // variable ones, so /api/products/search resolves here rather than trying to parse "search" as a Long.
+    public ResponseEntity<List<ProductResponse>> search(@RequestParam String q) {
+        return ResponseEntity.ok(
+                productService.search(q).stream().map(ProductResponse::fromEntity).toList());
+    }
+
 }   
 

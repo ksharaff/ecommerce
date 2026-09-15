@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  # Non-secret configuration. Notice these are the same service-name URLs from docker-compose -
+  # Kubernetes Services provide DNS by name exactly like Compose did.
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  REDIS_HOST: "redis"
+  SERVICES_PRODUCTSERVICE_BASEURL: "http://product-service:8080"
+  SERVICES_USERSERVICE_BASEURL: "http://user-service:8081"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-credentials
+type: Opaque
+stringData:
+  # stringData lets you write plain text; Kubernetes base64-encodes it on the way in.
+  # IMPORTANT and worth internalizing: Secrets are base64-ENCODED, not encrypted. Anyone with
+  # cluster read access can decode them trivially. They're better than hardcoding (they can be
+  # rotated, scoped by RBAC, and kept out of images), but real production adds sealed-secrets,
+  # External Secrets Operator, or a vault. Never commit a real Secret manifest to git.
+  POSTGRES_PASSWORD: "devpassword"

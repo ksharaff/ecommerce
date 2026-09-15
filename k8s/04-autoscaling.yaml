@@ -1,0 +1,58 @@
+# Horizontal Pod Autoscalers — the piece that actually demonstrates "scalability".
+#
+# An HPA watches a metric (CPU here) and adjusts the Deployment's replica count to keep it
+# near a target. Requires the metrics-server addon:  minikube addons enable metrics-server
+#
+# averageUtilization is measured against the resources.requests value in the Deployment,
+# NOT the limit. With requests.cpu = 200m, a 60% target means the HPA adds pods when average
+# usage exceeds 120m per pod. Getting this reference point wrong is a common source of
+# autoscalers that either never trigger or thrash constantly.
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: product-service
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: product-service
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30    # react fairly quickly to load increases
+    scaleDown:
+      stabilizationWindowSeconds: 300   # but scale DOWN slowly — otherwise a brief lull removes
+                                        # pods that are immediately needed again ("thrashing")
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: order-service
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: order-service
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 300

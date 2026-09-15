@@ -15,6 +15,43 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+# Redis
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+# Prometheus
+  prometheus:
+      image: prom/prometheus:latest
+      ports:
+        - "9090:9090"
+      volumes:
+        - ./prometheus.yml:/etc/prometheus/prometheus.yml
+        # Mounting a single config file from your repo into the container - the same volume
+        # mechanism as database persistence, used for configuration instead of data.
+
+# Grafana
+  grafana:
+      image: grafana/grafana:latest
+      ports:
+        - "3000:3000"
+      environment:
+        GF_SECURITY_ADMIN_PASSWORD: admin
+        GF_AUTH_ANONYMOUS_ENABLED: "true"
+        GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+        # Anonymous admin access - acceptable ONLY because this is a local-only learning setup.
+        # Never do this anywhere reachable from a network you don't control.
+      volumes:
+        - grafana-data:/var/lib/grafana
+      depends_on:
+        - prometheus
+
 # Product Database
   product-db:
     image: postgres:16
@@ -138,6 +175,7 @@ services:
       SPRING_DATASOURCE_USERNAME: product_user
       SPRING_DATASOURCE_PASSWORD: devpassword
       KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      REDIS_HOST: redis
     healthcheck:
       test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/8080"]
       interval: 5s
@@ -146,6 +184,8 @@ services:
       start_period: 40s
     depends_on:
       product-db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   # Payment Service      
@@ -169,4 +209,5 @@ volumes:
   user-db-data:
   order-db-data:
   payment-db-data:
+  grafana-data:
 
