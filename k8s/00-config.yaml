@@ -21,4 +21,6 @@ stringData:
   # cluster read access can decode them trivially. They're better than hardcoding (they can be
   # rotated, scoped by RBAC, and kept out of images), but real production adds sealed-secrets,
   # External Secrets Operator, or a vault. Never commit a real Secret manifest to git.
+
+  # local dev throwaway. can be committed. it is fine.
   POSTGRES_PASSWORD: "devpassword"
