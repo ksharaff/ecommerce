@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  # Runs on every push to main AND on every PR targeting main. The PR trigger is the
+  # important one on a team - it's what lets you block merging broken code.
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # GitHub's Ubuntu runners come with Docker already running, which is what makes
+    # your Testcontainers tests work here without any extra setup.
+
+    strategy:
+      fail-fast: false
+      # fail-fast: false means if product-service's tests fail, the other three STILL run.
+      # Default is true, which stops everything on the first failure - you'd only learn
+      # about one broken service per push instead of all of them.
+      matrix:
+        service: [ product-service, user-service, order-service, payment-service ]
+        # A "matrix" runs this same job once per value, in PARALLEL. Four separate runners,
+        # four test suites, roughly the wall-clock time of the slowest one.
+
+    name: Test ${{ matrix.service }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        # "uses" pulls in a prebuilt action from the marketplace rather than writing shell
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+          # cache: 'gradle' saves downloaded dependencies between runs. Without it every
+          # run re-downloads all of Spring Boot - minutes of wasted time per push.
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+        working-directory: ./${{ matrix.service }}
+        # Needed because Windows doesn't track the Unix executable bit - git stores gradlew
+        # without it, and Linux runners refuse to execute it. Classic cross-platform gotcha.
+
+      - name: Run tests
+        run: ./gradlew test --no-daemon
+        working-directory: ./${{ matrix.service }}
+        # --no-daemon: the Gradle daemon is a background process that speeds up repeated
+        # local builds. On a runner that's destroyed after one build, it's pure overhead.
+
+      - name: Upload test results
+        if: always()
+        # if: always() runs this even when tests FAILED - which is exactly when you most
+        # want the report. Default behavior would skip it on failure.
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.service }}
+          path: ${{ matrix.service }}/build/reports/tests/test/
+          retention-days: 7
