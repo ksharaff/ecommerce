@@ -20,57 +20,8 @@ GitHub Actions
 ## System Architecture
 
 ```mermaid
-flowchart LR
-    browser["Browser storefront<br/>static HTML · :3001"]
+<img width="990" height="1578" alt="E-Commerce Microservices — System Design" src="https://github.com/user-attachments/assets/e221b2cd-8ef5-46e6-b028-ed540a0346af" />
 
-    subgraph edge["Edge"]
-        gw["<b>api-gateway</b> :8090<br/>Spring Cloud Gateway (WebFlux)<br/>path routing · JWT filter · CORS"]
-    end
-
-    subgraph svc["Services — Spring Boot, one database each"]
-        us["<b>user-service</b> :8081<br/>registration · login · JWT issuing"]
-        ps["<b>product-service</b> :8080<br/>catalog · full-text search · cache"]
-        os["<b>order-service</b> :8082<br/>order placement · status"]
-        pay["<b>payment-service</b> :8083<br/>no REST API — Kafka only"]
-    end
-
-    subgraph data["State"]
-        udb[("userdb<br/>:5434")]
-        pdb[("productdb<br/>:5432")]
-        odb[("orderdb<br/>:5435")]
-        paydb[("paymentdb<br/>:5436")]
-        redis[("redis :6379<br/>product read cache")]
-    end
-
-    kafka{{"<b>Apache Kafka</b> — KRaft mode<br/>topics: order-events · payment-results"}}
-
-    subgraph obs["Observability"]
-        prom["prometheus :9090"]
-        graf["grafana :3000"]
-    end
-
-    browser -->|"JSON + Bearer JWT"| gw
-    gw --> us
-    gw --> ps
-    gw --> os
-
-    os -->|"REST: price + stock check"| ps
-    os -->|"REST: user lookup"| us
-
-    us --- udb
-    ps --- pdb
-    os --- odb
-    pay --- paydb
-    ps --- redis
-
-    os ==>|"publish OrderPlacedEvent"| kafka
-    kafka ==>|"group: payment-service"| pay
-    kafka ==>|"group: product-service"| ps
-    pay ==>|"publish PaymentResultEvent"| kafka
-    kafka ==>|"group: order-service"| os
-
-    svc -.->|"scrape /actuator/prometheus · 15s"| prom
-    prom -.-> graf
 ```
 
 **Why a gateway.** Clients get one origin and one place where authentication happens. The
