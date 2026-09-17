@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — Nexus Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #14171f;
+    --panel-2: #1a1e28;
+    --border: #252a36;
+    --text: #e8eaf0;
+    --muted: #868ea3;
+    --accent: #6366f1;
+    --accent-hover: #7c7ff2;
+    --ok: #22c55e;
+    --bad: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+  }
+  /* Subtle radial accent so the page doesn't read as a flat black rectangle */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,.12), transparent 70%);
+  }
+  .card {
+    position: relative;
+    width: 100%; max-width: 400px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 2rem;
+  }
+  .brand { display: flex; align-items: center; gap: .6rem; margin-bottom: 1.75rem; }
+  .logo {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #a855f7);
+    display: grid; place-items: center;
+    font-weight: 700; font-size: .95rem;
+  }
+  .brand-name { font-weight: 600; font-size: 1.05rem; letter-spacing: -.01em; }
+
+  /* Tabs — two modes on one page rather than two separate pages, since the
+     forms differ by only two fields. */
+  .tabs { display: flex; gap: .25rem; background: var(--panel-2);
+          padding: .25rem; border-radius: 9px; margin-bottom: 1.5rem; }
+  .tab {
+    flex: 1; padding: .5rem; border: 0; border-radius: 7px; cursor: pointer;
+    background: transparent; color: var(--muted);
+    font: inherit; font-size: .875rem; font-weight: 500;
+  }
+  .tab.active { background: var(--panel); color: var(--text); }
+
+  label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: .35rem; font-weight: 500; }
+  input {
+    width: 100%; padding: .65rem .8rem; margin-bottom: 1rem;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font: inherit; font-size: .9rem;
+  }
+  input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  /* Visible focus states are an accessibility requirement, not decoration —
+     keyboard users have no cursor to tell them where they are. */
+
+  .name-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+
+  button.submit {
+    width: 100%; padding: .7rem; border: 0; border-radius: 8px;
+    background: var(--accent); color: #fff;
+    font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer;
+  }
+  button.submit:hover { background: var(--accent-hover); }
+  button.submit:disabled { opacity: .6; cursor: not-allowed; }
+
+  .msg { font-size: .85rem; margin-top: 1rem; min-height: 1.2em; }
+  .msg.err { color: var(--bad); }
+  .msg.ok { color: var(--ok); }
+  .hint { font-size: .78rem; color: var(--muted); margin-top: 1.25rem; line-height: 1.6; }
+  .hide { display: none; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="brand">
+    <div class="logo">N</div>
+    <div class="brand-name">Nexus Store</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tabLogin" onclick="setMode('login')">Sign in</button>
+    <button class="tab" id="tabRegister" onclick="setMode('register')">Create account</button>
+  </div>
+
+  <form id="form" onsubmit="submitForm(event)">
+    <div id="nameFields" class="name-row hide">
+      <div>
+        <label for="firstName">First name</label>
+        <input id="firstName" autocomplete="given-name">
+      </div>
+      <div>
+        <label for="lastName">Last name</label>
+        <input id="lastName" autocomplete="family-name">
+      </div>
+    </div>
+
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username" required>
+
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" required>
+
+    <button class="submit" id="submitBtn" type="submit">Sign in</button>
+  </form>
+
+  <div class="msg" id="msg"></div>
+
+  <div class="hint">
+    Requests go to the API Gateway on :8090, which routes to user-service.
+    Passwords are hashed with BCrypt server-side and never stored in plain text.
+  </div>
+</div>
+
+<script>
+const GATEWAY = "http://localhost:8090";
+let mode = "login";
+
+function setMode(next) {
+  mode = next;
+  document.getElementById("tabLogin").classList.toggle("active", mode === "login");
+  document.getElementById("tabRegister").classList.toggle("active", mode === "register");
+  document.getElementById("nameFields").classList.toggle("hide", mode === "login");
+  document.getElementById("submitBtn").textContent = mode === "login" ? "Sign in" : "Create account";
+  document.getElementById("password").setAttribute(
+    "autocomplete", mode === "login" ? "current-password" : "new-password");
+  setMsg("");
+}
+
+function setMsg(text, kind) {
+  const el = document.getElementById("msg");
+  el.textContent = text;
+  el.className = "msg" + (kind ? " " + kind : "");
+}
+
+async function call(path, body) {
+  const res = await fetch(GATEWAY + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`;
+    try { detail = (await res.json()).message || detail; } catch (_) {}
+    // The server deliberately returns the same message for an unknown email and a
+    // wrong password, so this page cannot be used to discover which emails exist.
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+async function submitForm(e) {
+  e.preventDefault();
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  setMsg("");
+
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  try {
+    if (mode === "register") {
+      await call("/api/users/register", {
+        email, password,
+        firstName: document.getElementById("firstName").value.trim(),
+        lastName: document.getElementById("lastName").value.trim()
+      });
+      setMsg("Account created — signing you in…", "ok");
+    }
+
+    const auth = await call("/api/users/login", { email, password });
+
+    // sessionStorage, not localStorage: same XSS exposure, but it is cleared when the
+    // tab closes, so a live session is not left behind on a shared machine.
+    // The production-correct answer is an httpOnly cookie the browser sends
+    // automatically and JavaScript cannot read at all.
+    sessionStorage.setItem("token", auth.accessToken);
+    sessionStorage.setItem("user", JSON.stringify(auth.user));
+
+    window.location.href = "index.html";
+  } catch (err) {
+    setMsg(err.message, "err");
+    btn.disabled = false;
+  }
+}
+
+// Already signed in? Skip straight to the catalog.
+if (sessionStorage.getItem("token")) {
+  window.location.href = "index.html";
+}
+</script>
+</body>
+</html>

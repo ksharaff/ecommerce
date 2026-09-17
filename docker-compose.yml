@@ -120,6 +120,20 @@ services:
       timeout: 5s
       retries: 5
 
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8090:8090"
+    environment:
+      SERVICES_USER_URL: http://user-service:8081
+      SERVICES_PRODUCT_URL: http://product-service:8080
+      SERVICES_ORDER_URL: http://order-service:8082
+      JWT_SECRET: dev-only-secret-key-that-is-at-least-32-bytes-long-for-hmac-sha256
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+
 # User Service
   user-service:
     build: ./user-service

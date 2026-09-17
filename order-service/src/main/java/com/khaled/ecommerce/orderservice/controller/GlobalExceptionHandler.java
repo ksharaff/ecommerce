@@ -1,18 +1,20 @@
 package com.khaled.ecommerce.orderservice.controller;
 
-import com.khaled.ecommerce.orderservice.client.ProductNotFoundException;
-import com.khaled.ecommerce.orderservice.client.ServiceUnavailableException;
-import com.khaled.ecommerce.orderservice.client.UserNotFoundException;
-import com.khaled.ecommerce.orderservice.dto.ErrorResponse;
-import com.khaled.ecommerce.orderservice.service.InsufficientStockException;
-import com.khaled.ecommerce.orderservice.service.OrderNotFoundException;
+import java.util.stream.Collectors;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.stream.Collectors;
+import com.khaled.ecommerce.orderservice.client.ProductNotFoundException;
+import com.khaled.ecommerce.orderservice.client.ServiceUnavailableException;
+import com.khaled.ecommerce.orderservice.client.UserNotFoundException;
+import com.khaled.ecommerce.orderservice.dto.ErrorResponse;
+import com.khaled.ecommerce.orderservice.security.InvalidTokenException;
+import com.khaled.ecommerce.orderservice.service.InsufficientStockException;
+import com.khaled.ecommerce.orderservice.service.OrderNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -49,4 +51,9 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(message));
     }
-}
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse(ex.getMessage()));
+    }
+}  

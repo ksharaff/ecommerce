@@ -1,0 +1,33 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # Each route: an id, where to forward, and what to match on.
+            - id: user-service
+              uri: ${SERVICES_USER_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/users/**
+            - id: product-service
+              uri: ${SERVICES_PRODUCT_URL:http://localhost:8080}
+              predicates:
+                - Path=/api/products/**
+            - id: order-service
+              uri: ${SERVICES_ORDER_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/orders/**
+
+jwt:
+  secret: ${JWT_SECRET:dev-only-secret-key-that-is-at-least-32-bytes-long-for-hmac-sha256}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

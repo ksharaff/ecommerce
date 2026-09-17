@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catalog — Nexus Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #14171f;
+    --panel-2: #1a1e28;
+    --border: #252a36;
+    --text: #e8eaf0;
+    --muted: #868ea3;
+    --accent: #6366f1;
+    --accent-hover: #7c7ff2;
+    --ok: #22c55e;
+    --warn: #f59e0b;
+    --bad: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px; line-height: 1.5;
+  }
+
+  /* ---------- header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(11,13,18,.85); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-inner {
+    max-width: 1280px; margin: 0 auto; padding: .9rem 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand { display: flex; align-items: center; gap: .6rem; }
+  .logo {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #a855f7);
+    display: grid; place-items: center; font-weight: 700; font-size: .9rem;
+  }
+  .brand-name { font-weight: 600; letter-spacing: -.01em; }
+  .spacer { flex: 1; }
+  .user-chip { color: var(--muted); font-size: .85rem; }
+  .icon-btn {
+    position: relative; background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--text); padding: .45rem .8rem; border-radius: 8px;
+    font: inherit; font-size: .85rem; cursor: pointer;
+  }
+  .icon-btn:hover { border-color: var(--accent); }
+  .badge {
+    position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px;
+    background: var(--accent); color: #fff; border-radius: 99px;
+    font-size: .7rem; font-weight: 600; display: grid; place-items: center; padding: 0 5px;
+  }
+
+  /* ---------- layout ---------- */
+  .layout {
+    max-width: 1280px; margin: 0 auto; padding: 1.5rem;
+    display: grid; grid-template-columns: 230px 1fr; gap: 1.5rem; align-items: start;
+  }
+  @media (max-width: 880px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.1rem;
+  }
+  aside { position: sticky; top: 74px; }
+  @media (max-width: 880px) { aside { position: static; } }
+
+  h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: .09em;
+       color: var(--muted); font-weight: 600; margin-bottom: .7rem; }
+  .filter-group + .filter-group { margin-top: 1.4rem; }
+
+  input[type=text], input[type=number], select {
+    width: 100%; padding: .5rem .65rem;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 7px; color: var(--text); font: inherit; font-size: .85rem;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+  .check { display: flex; align-items: center; gap: .55rem; padding: .3rem 0;
+           cursor: pointer; font-size: .875rem; }
+  .check input { width: auto; accent-color: var(--accent); cursor: pointer; }
+  .range { display: grid; grid-template-columns: 1fr auto 1fr; gap: .4rem; align-items: center; }
+  .range span { color: var(--muted); font-size: .8rem; }
+
+  .link-btn { background: none; border: 0; color: var(--accent);
+              font: inherit; font-size: .82rem; cursor: pointer; padding: 0; }
+
+  /* ---------- toolbar ---------- */
+  .toolbar { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.1rem; flex-wrap: wrap; }
+  .count { color: var(--muted); font-size: .85rem; }
+  .toolbar select { width: auto; }
+
+  /* ---------- product grid ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 1rem; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;
+  }
+  .card:hover { border-color: #323847; }
+  .thumb {
+    height: 120px; display: grid; place-items: center;
+    font-size: 2rem; font-weight: 700; color: rgba(255,255,255,.14);
+    background: linear-gradient(135deg, var(--panel-2), #11141b);
+    border-bottom: 1px solid var(--border);
+  }
+  .card-body { padding: .85rem; display: flex; flex-direction: column; gap: .5rem; flex: 1; }
+  .card-cat { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .card-name { font-weight: 500; line-height: 1.35; }
+  .card-desc { font-size: .8rem; color: var(--muted);
+               display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+  .price { font-weight: 600; font-size: 1.02rem; }
+  .stock { font-size: .75rem; color: var(--ok); }
+  .stock.low { color: var(--warn); }
+  .stock.out { color: var(--bad); }
+  .add {
+    background: var(--accent); color: #fff; border: 0; border-radius: 7px;
+    padding: .4rem .75rem; font: inherit; font-size: .82rem; font-weight: 500; cursor: pointer;
+  }
+  .add:hover { background: var(--accent-hover); }
+  .add:disabled { background: var(--panel-2); color: var(--muted); cursor: not-allowed; }
+
+  /* ---------- cart drawer ---------- */
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 360px; max-width: 92vw;
+    background: var(--panel); border-left: 1px solid var(--border);
+    transform: translateX(100%); transition: transform .22s ease;
+    z-index: 30; display: flex; flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+  @media (prefers-reduced-motion: reduce) { .drawer { transition: none; } }
+  /* Respecting prefers-reduced-motion is an accessibility requirement — motion
+     can trigger nausea or migraines for some users. */
+  .drawer-head { padding: 1.1rem; border-bottom: 1px solid var(--border);
+                 display: flex; align-items: center; justify-content: space-between; }
+  .drawer-body { flex: 1; overflow-y: auto; padding: 1.1rem; }
+  .drawer-foot { padding: 1.1rem; border-top: 1px solid var(--border); }
+  .line { display: flex; justify-content: space-between; gap: .75rem; padding: .6rem 0;
+          border-bottom: 1px solid var(--border); font-size: .875rem; }
+  .line:last-child { border-bottom: 0; }
+  .qty-ctl { display: flex; align-items: center; gap: .4rem; }
+  .qty-ctl button {
+    width: 22px; height: 22px; border-radius: 5px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text); cursor: pointer; font: inherit; line-height: 1;
+  }
+  .total { display: flex; justify-content: space-between; margin-bottom: .85rem; font-weight: 600; }
+  .checkout {
+    width: 100%; padding: .7rem; border: 0; border-radius: 8px;
+    background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  .checkout:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ---------- orders ---------- */
+  .order { padding: .7rem 0; border-bottom: 1px solid var(--border); font-size: .85rem; }
+  .order:last-child { border-bottom: 0; }
+  .status { font-weight: 600; font-size: .78rem; padding: .1rem .5rem;
+            border-radius: 99px; border: 1px solid currentColor; }
+  .status.PENDING { color: var(--warn); }
+  .status.CONFIRMED { color: var(--ok); }
+  .status.CANCELLED { color: var(--bad); }
+
+  .empty { color: var(--muted); font-size: .875rem; padding: 2rem 0; text-align: center; }
+  .banner {
+    background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3);
+    color: var(--warn); padding: .6rem .85rem; border-radius: 9px;
+    font-size: .82rem; margin-bottom: 1.1rem;
+  }
+  .toast {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+    background: var(--panel-2); border: 1px solid var(--border);
+    padding: .65rem 1.1rem; border-radius: 9px; font-size: .875rem;
+    z-index: 40; opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+  .hide { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand"><div class="logo">N</div><div class="brand-name">Nexus Store</div></div>
+    <div class="spacer"></div>
+    <span class="user-chip" id="userChip"></span>
+    <button class="icon-btn" onclick="toggleCart()">
+      Cart <span class="badge hide" id="cartBadge">0</span>
+    </button>
+    <button class="icon-btn" onclick="logout()">Sign out</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- FILTERS -->
+  <aside class="panel">
+    <div class="filter-group">
+      <h3>Search</h3>
+      <input type="text" id="q" placeholder="Search products…" oninput="debouncedRender()">
+    </div>
+
+    <div class="filter-group">
+      <h3>Category</h3>
+      <div id="categories"></div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Price</h3>
+      <div class="range">
+        <input type="number" id="minPrice" placeholder="0" min="0" oninput="debouncedRender()">
+        <span>&ndash;</span>
+        <input type="number" id="maxPrice" placeholder="Max" min="0" oninput="debouncedRender()">
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Availability</h3>
+      <label class="check">
+        <input type="checkbox" id="inStockOnly" onchange="render()">
+        In stock only
+      </label>
+    </div>
+
+    <div class="filter-group">
+      <button class="link-btn" onclick="resetFilters()">Clear all filters</button>
+    </div>
+  </aside>
+
+  <!-- CATALOG -->
+  <main>
+    <div id="mockBanner" class="banner hide">
+      Showing demo data &mdash; the API gateway on :8090 isn't reachable, so this catalog is local sample content.
+    </div>
+
+    <div class="toolbar">
+      <span class="count" id="count"></span>
+      <div class="spacer"></div>
+      <label for="sort" style="color:var(--muted);font-size:.85rem;margin:0">Sort</label>
+      <select id="sort" onchange="render()">
+        <option value="relevance">Featured</option>
+        <option value="price-asc">Price: low to high</option>
+        <option value="price-desc">Price: high to low</option>
+        <option value="name-asc">Name: A&ndash;Z</option>
+        <option value="stock-desc">Stock: most first</option>
+      </select>
+    </div>
+
+    <div class="grid" id="grid"></div>
+    <div class="empty hide" id="noResults">No products match those filters.</div>
+
+    <div class="panel" style="margin-top:1.5rem">
+      <h3>Your orders</h3>
+      <div id="orders"><div class="empty">No orders yet.</div></div>
+    </div>
+  </main>
+</div>
+
+<!-- CART -->
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <strong>Cart</strong>
+    <button class="icon-btn" onclick="toggleCart()">Close</button>
+  </div>
+  <div class="drawer-body" id="cartBody"></div>
+  <div class="drawer-foot">
+    <div class="total"><span>Total</span><span id="cartTotal">$0.00</span></div>
+    <button class="checkout" id="checkoutBtn" onclick="checkout()">Place order</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GATEWAY = "http://localhost:8090";
+
+const token = sessionStorage.getItem("token");
+const user  = JSON.parse(sessionStorage.getItem("user") || "null");
+
+// Guard: no token means no session. The gateway would reject order calls anyway,
+// but redirecting here avoids showing a UI the user can't actually use.
+if (!token) window.location.href = "login.html";
+if (user) document.getElementById("userChip").textContent = user.email;
+
+let allProducts = [];   // everything fetched once
+let cart = [];          // [{ id, name, price, quantity, stockQuantity }]
+let usingMock = false;
+let pollTimer = null;
+
+// Sample catalog used only when the backend is unreachable, so the page is still
+// demo-able standalone (useful for screenshots). Seed the real database with
+// seed-products.ps1 to exercise the actual stack instead.
+const MOCK_PRODUCTS = [
+  { id:1,  name:"Aurora Wireless Mouse",      description:"Ergonomic 6-button mouse with silent switches and USB-C charging.", price:29.99,  stockQuantity:142, category:"Peripherals" },
+  { id:2,  name:"Halcyon Mechanical Keyboard", description:"Hot-swappable 75% board with PBT keycaps and tactile brown switches.", price:129.00, stockQuantity:38,  category:"Peripherals" },
+  { id:3,  name:"Vantage 27-inch 4K Monitor", description:"IPS panel, 144Hz, 95% DCI-P3 coverage with a single-cable USB-C dock.", price:549.00, stockQuantity:12,  category:"Displays" },
+  { id:4,  name:"Echo Studio Headphones",     description:"Over-ear ANC headphones with 40-hour battery and multipoint pairing.", price:249.99, stockQuantity:56,  category:"Audio" },
+  { id:5,  name:"Pulse Compact Earbuds",      description:"IPX5 earbuds with adaptive transparency and wireless charging case.", price:89.50,  stockQuantity:203, category:"Audio" },
+  { id:6,  name:"Nimbus 2TB NVMe SSD",        description:"PCIe 4.0 drive rated 7,000MB/s read with a 5-year warranty.", price:179.00, stockQuantity:74,  category:"Storage" },
+  { id:7,  name:"Nimbus Portable SSD 1TB",    description:"Pocket-sized USB-C drive, rugged aluminium shell, 1,050MB/s.", price:109.99, stockQuantity:0,   category:"Storage" },
+  { id:8,  name:"Meridian USB-C Hub",         description:"9-in-1 hub with 100W passthrough, dual HDMI, and gigabit ethernet.", price:69.95,  stockQuantity:88,  category:"Accessories" },
+  { id:9,  name:"Atlas Laptop Stand",         description:"Aluminium stand with six height positions and cable routing channel.", price:45.00,  stockQuantity:7,   category:"Accessories" },
+  { id:10, name:"Lumen Desk Lamp",            description:"Adjustable colour temperature with ambient light sensor and USB port.", price:79.00,  stockQuantity:31,  category:"Accessories" },
+  { id:11, name:"Orbit 1440p Webcam",         description:"Auto-framing webcam with dual noise-cancelling mics and privacy shutter.", price:119.00, stockQuantity:24,  category:"Peripherals" },
+  { id:12, name:"Cascade Streaming Mic",      description:"Cardioid USB condenser mic with onboard gain and zero-latency monitoring.", price:139.00, stockQuantity:19,  category:"Audio" },
+  { id:13, name:"Vantage 34-inch Ultrawide",  description:"Curved 3440x1440 display with KVM switch and 120Hz refresh.", price:749.00, stockQuantity:5,   category:"Displays" },
+  { id:14, name:"Forge GaN Charger 100W",     description:"Four-port GaN charger that fits a laptop and three devices at once.", price:59.99,  stockQuantity:167, category:"Accessories" },
+  { id:15, name:"Relay Ergonomic Trackball",  description:"Thumb-operated trackball designed to reduce wrist strain.", price:74.50,  stockQuantity:41,  category:"Peripherals" }
+];
+
+/* ---------------- API ---------------- */
+
+async function api(path, options = {}) {
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  if (token) headers["Authorization"] = "Bearer " + token;
+
+  const res = await fetch(GATEWAY + path, { ...options, headers });
+
+  // 401 means the token expired or was rejected. Bounce to login rather than
+  // leaving the user clicking buttons that silently do nothing.
+  if (res.status === 401) {
+    sessionStorage.clear();
+    window.location.href = "login.html";
+    return;
+  }
+  if (!res.ok) {
+    let detail = "Request failed (" + res.status + ")";
+    try { detail = (await res.json()).message || detail; } catch (_) {}
+    throw new Error(detail);
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+async function loadProducts() {
+  try {
+    const data = await api("/api/products");
+    if (data && data.length) {
+      allProducts = data;
+      usingMock = false;
+    } else {
+      allProducts = MOCK_PRODUCTS; usingMock = true;
+    }
+  } catch (_) {
+    allProducts = MOCK_PRODUCTS; usingMock = true;
+  }
+  document.getElementById("mockBanner").classList.toggle("hide", !usingMock);
+  buildCategoryFilter();
+  render();
+}
+
+/* ---------------- filtering & sorting ----------------
+   All client-side, over the full list fetched once. Correct at this size,
+   wrong at scale: with thousands of products this must move server-side as
+   query params (?category=&sort=price,desc&page=0&size=24) so the browser
+   never downloads the entire catalog just to filter it locally. */
+
+function buildCategoryFilter() {
+  const cats = [...new Set(allProducts.map(p => p.category).filter(Boolean))].sort();
+  document.getElementById("categories").innerHTML = cats.map(c =>
+    '<label class="check"><input type="checkbox" value="' + escapeHtml(c) +
+    '" onchange="render()"> ' + escapeHtml(c) + '</label>').join("");
+}
+
+function selectedCategories() {
+  return [...document.querySelectorAll("#categories input:checked")].map(i => i.value);
+}
+
+function render() {
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const cats = selectedCategories();
+  const min = parseFloat(document.getElementById("minPrice").value);
+  const max = parseFloat(document.getElementById("maxPrice").value);
+  const inStockOnly = document.getElementById("inStockOnly").checked;
+
+  let list = allProducts.filter(p => {
+    const haystack = (p.name + " " + (p.description || "")).toLowerCase();
+    if (q && !haystack.includes(q)) return false;
+    if (cats.length && !cats.includes(p.category)) return false;
+    if (!isNaN(min) && p.price < min) return false;
+    if (!isNaN(max) && p.price > max) return false;
+    if (inStockOnly && p.stockQuantity <= 0) return false;
+    return true;
+  });
+
+  const sort = document.getElementById("sort").value;
+  const sorters = {
+    "price-asc":  (a, b) => a.price - b.price,
+    "price-desc": (a, b) => b.price - a.price,
+    "name-asc":   (a, b) => a.name.localeCompare(b.name),
+    "stock-desc": (a, b) => b.stockQuantity - a.stockQuantity
+  };
+  if (sorters[sort]) list = [...list].sort(sorters[sort]);
+
+  document.getElementById("count").textContent =
+    list.length + (list.length === 1 ? " product" : " products");
+  document.getElementById("noResults").classList.toggle("hide", list.length > 0);
+
+  document.getElementById("grid").innerHTML = list.map(p => {
+    const out = p.stockQuantity <= 0;
+    const low = !out && p.stockQuantity < 10;
+    const stockLabel = out ? "Out of stock"
+                     : low ? "Only " + p.stockQuantity + " left"
+                     : p.stockQuantity + " in stock";
+    const stockClass = out ? "out" : low ? "low" : "";
+    return '' +
+      '<article class="card">' +
+        '<div class="thumb">' + escapeHtml(String(p.name || "?").charAt(0)) + '</div>' +
+        '<div class="card-body">' +
+          '<div class="card-cat">' + escapeHtml(p.category || "General") + '</div>' +
+          '<div class="card-name">' + escapeHtml(p.name) + '</div>' +
+          '<div class="card-desc">' + escapeHtml(p.description || "") + '</div>' +
+          '<div class="card-foot">' +
+            '<div>' +
+              '<div class="price">$' + Number(p.price).toFixed(2) + '</div>' +
+              '<div class="stock ' + stockClass + '">' + stockLabel + '</div>' +
+            '</div>' +
+            '<button class="add" ' + (out ? "disabled" : "") +
+              ' onclick="addToCart(' + p.id + ')">Add</button>' +
+          '</div>' +
+        '</div>' +
+      '</article>';
+  }).join("");
+}
+
+let debounceTimer;
+function debouncedRender() {
+  // Re-rendering on every keystroke is wasteful; 180ms feels instant but batches typing.
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(render, 180);
+}
+
+function resetFilters() {
+  document.getElementById("q").value = "";
+  document.getElementById("minPrice").value = "";
+  document.getElementById("maxPrice").value = "";
+  document.getElementById("inStockOnly").checked = false;
+  document.querySelectorAll("#categories input").forEach(i => { i.checked = false; });
+  document.getElementById("sort").value = "relevance";
+  render();
+}
+
+/* ---------------- cart ---------------- */
+
+function addToCart(id) {
+  const p = allProducts.find(x => x.id === id);
+  if (!p) return;
+  const line = cart.find(l => l.id === id);
+
+  if (line) {
+    if (line.quantity >= p.stockQuantity) { toast("No more stock available"); return; }
+    line.quantity++;
+  } else {
+    cart.push({ id: p.id, name: p.name, price: p.price, quantity: 1, stockQuantity: p.stockQuantity });
+  }
+  renderCart();
+  toast(p.name + " added");
+}
+
+function changeQty(id, delta) {
+  const line = cart.find(l => l.id === id);
+  if (!line) return;
+  line.quantity += delta;
+  if (line.quantity <= 0) cart = cart.filter(l => l.id !== id);
+  else if (line.quantity > line.stockQuantity) line.quantity = line.stockQuantity;
+  renderCart();
+}
+
+function renderCart() {
+  const badge = document.getElementById("cartBadge");
+  const count = cart.reduce((n, l) => n + l.quantity, 0);
+  badge.textContent = count;
+  badge.classList.toggle("hide", count === 0);
+
+  document.getElementById("cartBody").innerHTML = cart.length
+    ? cart.map(l =>
+        '<div class="line">' +
+          '<div>' +
+            '<div>' + escapeHtml(l.name) + '</div>' +
+            '<div style="color:var(--muted);font-size:.8rem">$' + l.price.toFixed(2) + ' each</div>' +
+          '</div>' +
+          '<div class="qty-ctl">' +
+            '<button onclick="changeQty(' + l.id + ', -1)" aria-label="Decrease quantity">-</button>' +
+            '<span>' + l.quantity + '</span>' +
+            '<button onclick="changeQty(' + l.id + ', 1)" aria-label="Increase quantity">+</button>' +
+          '</div>' +
+        '</div>').join("")
+    : '<div class="empty">Your cart is empty.</div>';
+
+  const total = cart.reduce((sum, l) => sum + l.price * l.quantity, 0);
+  document.getElementById("cartTotal").textContent = "$" + total.toFixed(2);
+  document.getElementById("checkoutBtn").disabled = cart.length === 0;
+}
+
+function toggleCart() { document.getElementById("drawer").classList.toggle("open"); }
+
+async function checkout() {
+  if (usingMock) { toast("Demo data - start the backend to place a real order"); return; }
+
+  const btn = document.getElementById("checkoutBtn");
+  btn.disabled = true;
+
+  try {
+    // No userId in the body. The gateway verifies the JWT and order-service reads
+    // the user id from the token, so a client cannot order as someone else.
+    await api("/api/orders", {
+      method: "POST",
+      body: JSON.stringify({ items: cart.map(l => ({ productId: l.id, quantity: l.quantity })) })
+    });
+
+    cart = [];
+    renderCart();
+    toggleCart();
+    toast("Order placed - watching for payment result...");
+
+    // The order starts PENDING and becomes CONFIRMED or CANCELLED once payment-service
+    // consumes the Kafka event and order-service consumes the result. Polling briefly
+    // makes that asynchronous handoff visible instead of invisible.
+    loadOrders();
+    clearInterval(pollTimer);
+    let ticks = 0;
+    pollTimer = setInterval(() => {
+      loadOrders();
+      if (++ticks >= 8) { clearInterval(pollTimer); loadProducts(); }
+    }, 1500);
+  } catch (err) {
+    toast(err.message);
+    btn.disabled = false;
+  }
+}
+
+/* ---------------- orders ---------------- */
+
+async function loadOrders() {
+  if (usingMock) return;
+  try {
+    const orders = await api("/api/orders");
+    const el = document.getElementById("orders");
+    if (!orders || !orders.length) { el.innerHTML = '<div class="empty">No orders yet.</div>'; return; }
+
+    el.innerHTML = orders.slice().reverse().map(o =>
+      '<div class="order">' +
+        '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.2rem">' +
+          '<strong>Order #' + o.id + '</strong>' +
+          '<span class="status ' + o.status + '">' + o.status + '</span>' +
+          '<span style="margin-left:auto;font-weight:600">$' + Number(o.totalAmount).toFixed(2) + '</span>' +
+        '</div>' +
+        '<div style="color:var(--muted);font-size:.8rem">' +
+          o.items.map(i => i.quantity + ' x product ' + i.productId +
+            ' @ $' + Number(i.unitPriceAtOrderTime).toFixed(2)).join(" &middot; ") +
+        '</div>' +
+      '</div>').join("");
+  } catch (_) { /* leave the previous render in place on a transient failure */ }
+}
+
+/* ---------------- misc ---------------- */
+
+function logout() {
+  sessionStorage.clear();
+  window.location.href = "login.html";
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+}
+
+// Never inject server-supplied text into innerHTML unescaped. A product named
+// "<img onerror=...>" would otherwise execute in every visitor's browser.
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+loadProducts();
+loadOrders();
+renderCart();
+</script>
+</body>
+</html>

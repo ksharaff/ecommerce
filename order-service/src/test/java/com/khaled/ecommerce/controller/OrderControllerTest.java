@@ -8,10 +8,13 @@ import com.khaled.ecommerce.orderservice.dto.CreateOrderRequest;
 import com.khaled.ecommerce.orderservice.dto.OrderItemDto;
 import com.khaled.ecommerce.orderservice.model.Order;
 import com.khaled.ecommerce.orderservice.model.OrderItem;
+import com.khaled.ecommerce.orderservice.security.AuthenticatedUser;
+import com.khaled.ecommerce.orderservice.security.JwtService;
 import com.khaled.ecommerce.orderservice.service.InsufficientStockException;
 import com.khaled.ecommerce.orderservice.service.OrderNotFoundException;
 import com.khaled.ecommerce.orderservice.service.OrderService;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -37,6 +40,22 @@ class OrderControllerTest {
     @MockitoBean
     private OrderService orderService;
 
+    // OrderController reads the caller's id from AuthenticatedUser (populated by JwtAuthFilter
+    // from the verified token), never from the request body. @WebMvcTest doesn't run the filter
+    // chain, so the mock stands in for "a request that carried a valid token for user 1".
+    @MockitoBean
+    private AuthenticatedUser authenticatedUser;
+
+    // JwtAuthFilter is a servlet filter, so @WebMvcTest loads it as part of the web layer and
+    // it needs its JwtService collaborator present even though these tests bypass the filter.
+    @MockitoBean
+    private JwtService jwtService;
+
+    @BeforeEach
+    void stubAuthenticatedCaller() {
+        when(authenticatedUser.getUserId()).thenReturn(1L);
+    }
+
     private Order sampleOrder() {
         Order order = new Order(1L);
         order.addItem(new OrderItem(10L, 2, new BigDecimal("29.99")));
@@ -47,7 +66,7 @@ class OrderControllerTest {
     void placeOrder_withValidRequest_returns201() throws Exception {
         when(orderService.placeOrder(any(), any())).thenReturn(sampleOrder());
 
-        CreateOrderRequest request = new CreateOrderRequest(1L, List.of(new OrderItemDto(10L, 2)));
+        CreateOrderRequest request = new CreateOrderRequest(List.of(new OrderItemDto(10L, 2)));
 
         mockMvc.perform(post("/api/orders")
                         .contentType("application/json")
@@ -58,7 +77,7 @@ class OrderControllerTest {
 
     @Test
     void placeOrder_withEmptyItemsList_returns400() throws Exception {
-        CreateOrderRequest request = new CreateOrderRequest(1L, List.of()); // @NotEmpty should catch this
+        CreateOrderRequest request = new CreateOrderRequest(List.of()); // @NotEmpty should catch this
 
         mockMvc.perform(post("/api/orders")
                         .contentType("application/json")
@@ -70,7 +89,7 @@ class OrderControllerTest {
     void placeOrder_withZeroQuantityItem_returns400() throws Exception {
         // This is the test that would fail if @Valid were missing on the items list in
         // CreateOrderRequest - without it, this invalid nested object sails straight through untouched.
-        CreateOrderRequest request = new CreateOrderRequest(1L, List.of(new OrderItemDto(10L, 0)));
+        CreateOrderRequest request = new CreateOrderRequest(List.of(new OrderItemDto(10L, 0)));
 
         mockMvc.perform(post("/api/orders")
                         .contentType("application/json")
@@ -82,7 +101,7 @@ class OrderControllerTest {
     void placeOrder_whenUserNotFound_returns400() throws Exception {
         when(orderService.placeOrder(any(), any())).thenThrow(new UserNotFoundException(999L));
 
-        CreateOrderRequest request = new CreateOrderRequest(999L, List.of(new OrderItemDto(10L, 1)));
+        CreateOrderRequest request = new CreateOrderRequest(List.of(new OrderItemDto(10L, 1)));
 
         mockMvc.perform(post("/api/orders")
                         .contentType("application/json")
@@ -94,7 +113,7 @@ class OrderControllerTest {
     void placeOrder_whenProductNotFound_returns400() throws Exception {
         when(orderService.placeOrder(any(), any())).thenThrow(new ProductNotFoundException(999L));
 
-        CreateOrderRequest request = new CreateOrderRequest(1L, List.of(new OrderItemDto(999L, 1)));
+        CreateOrderRequest request = new CreateOrderRequest(List.of(new OrderItemDto(999L, 1)));
 
         mockMvc.perform(post("/api/orders")
                         .contentType("application/json")
@@ -106,7 +125,7 @@ class OrderControllerTest {
     void placeOrder_withInsufficientStock_returns409() throws Exception {
         when(orderService.placeOrder(any(), any())).thenThrow(new InsufficientStockException(10L, 5, 100));
 
-        CreateOrderRequest request = new CreateOrderRequest(1L, List.of(new OrderItemDto(10L, 100)));
+        CreateOrderRequest request = new CreateOrderRequest(List.of(new OrderItemDto(10L, 100)));
 
         mockMvc.perform(post("/api/orders")
                         .contentType("application/json")
@@ -119,7 +138,7 @@ class OrderControllerTest {
         when(orderService.placeOrder(any(), any()))
                 .thenThrow(new ServiceUnavailableException("Product service", new RuntimeException()));
 
-        CreateOrderRequest request = new CreateOrderRequest(1L, List.of(new OrderItemDto(10L, 1)));
+        CreateOrderRequest request = new CreateOrderRequest(List.of(new OrderItemDto(10L, 1)));
 
         mockMvc.perform(post("/api/orders")
                         .contentType("application/json")

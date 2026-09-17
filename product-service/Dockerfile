@@ -1,5 +1,5 @@
 # ---- Build stage ----
-FROM eclipse-temurin:23-jdk AS build
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
 # Copy only the files needed to resolve dependencies first...
@@ -18,7 +18,7 @@ RUN ./gradlew build -x test --no-daemon
 # re-running here just slows down every single build for no extra safety.
 
 # ---- Runtime stage ----
-FROM eclipse-temurin:23-jre AS runtime
+FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
 
 # Copy ONLY the built jar from the build stage - none of the JDK, Gradle, or source comes along

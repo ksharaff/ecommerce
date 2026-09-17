@@ -1,15 +1,24 @@
 package com.khaled.ecommerce.orderservice.controller;
 
-import com.khaled.ecommerce.orderservice.dto.*;
-import com.khaled.ecommerce.orderservice.model.Order;
-import com.khaled.ecommerce.orderservice.service.OrderItemRequest;
-import com.khaled.ecommerce.orderservice.service.OrderService;
-import jakarta.validation.Valid;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.khaled.ecommerce.orderservice.dto.CreateOrderRequest;
+import com.khaled.ecommerce.orderservice.dto.OrderResponse;
+import com.khaled.ecommerce.orderservice.model.Order;
+import com.khaled.ecommerce.orderservice.security.AuthenticatedUser;
+import com.khaled.ecommerce.orderservice.service.OrderItemRequest;
+import com.khaled.ecommerce.orderservice.service.OrderService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -17,18 +26,24 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    public OrderController(OrderService orderService) {
+    private final AuthenticatedUser authenticatedUser;
+
+    public OrderController(OrderService orderService, AuthenticatedUser authenticatedUser) {
         this.orderService = orderService;
+        this.authenticatedUser = authenticatedUser;
     }
 
     @PostMapping
     public ResponseEntity<OrderResponse> placeOrder(@Valid @RequestBody CreateOrderRequest request) {
-        // Map the validated, HTTP-facing DTO into the plain internal record OrderService expects -
-        // keeps validation annotations out of the service layer entirely
+        Long userId = authenticatedUser.getUserId();
+        // THE actual fix. The userId now comes from a cryptographically verified token,
+        // not from the request body where the caller controls it. request.userId() is
+        // ignored entirely - you could delete it from the DTO.
+
         List<OrderItemRequest> items = request.items().stream()
                 .map(dto -> new OrderItemRequest(dto.productId(), dto.quantity()))
                 .toList();
-        Order order = orderService.placeOrder(request.userId(), items);
+        Order order = orderService.placeOrder(userId, items);
         return ResponseEntity.status(HttpStatus.CREATED).body(OrderResponse.fromEntity(order));
     }
 
@@ -38,10 +53,11 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<List<OrderResponse>> listOrders(@RequestParam Long userId) {
-        // No (required = false) here, unlike Product's category filter - deliberately. Without a
-        // required userId, this would silently become "list every order in the system," which isn't
-        // a real feature we've built (no auth/roles yet to say who's allowed to see that).
+    public ResponseEntity<List<OrderResponse>> listOrders() {
+        // The userId comes from the verified token, not a query param - a caller can only ever
+        // list their own orders. Taking it as a parameter would let anyone read someone else's
+        // by guessing an id, and omitting it would silently mean "every order in the system."
+        Long userId = authenticatedUser.getUserId();
         List<Order> orders = orderService.listOrdersForUser(userId);
         return ResponseEntity.ok(orders.stream().map(OrderResponse::fromEntity).toList());
     }

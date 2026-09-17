@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper;
 import com.khaled.ecommerce.userservice.dto.LoginRequest;
 import com.khaled.ecommerce.userservice.dto.RegisterRequest;
 import com.khaled.ecommerce.userservice.model.User;
+import com.khaled.ecommerce.userservice.security.JwtService;
 import com.khaled.ecommerce.userservice.service.EmailAlreadyExistsException;
 import com.khaled.ecommerce.userservice.service.InvalidCredentialsException;
 import com.khaled.ecommerce.userservice.service.UserService;
@@ -27,6 +28,12 @@ class UserControllerTest {
 
     @MockitoBean
     private UserService userService;
+
+    // @WebMvcTest loads only the web layer, so every collaborator UserController asks for in its
+    // constructor must be supplied as a mock - including JwtService, which login needs to mint a
+    // token. Without this the whole context fails to start and every test in the class errors.
+    @MockitoBean
+    private JwtService jwtService;
 
     @Test
     void register_withValidData_returns201AndNeverLeaksPasswordHash() throws Exception {

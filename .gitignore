@@ -45,9 +45,13 @@ application-local.properties
 application-*.local.properties
 .claude/settings.local.json
 
-### Logs ###
+### Logs and JVM crash artifacts ###
 *.log
 logs/
+# hs_err_pid*.log / replay_pid*.log are already covered by *.log above, but a JVM crash or an
+# OutOfMemoryError can also drop heap dumps and Windows minidumps, which are hundreds of MB.
+*.hprof
+*.mdmp
 
 ### Operating system files ###
 .DS_Store

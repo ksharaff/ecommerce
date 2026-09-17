@@ -4,10 +4,11 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 
-public record  CreateOrderRequest(
-    @NotNull Long userId,
-    // Nested objects and lists need their own explicit @Valid.
-    @NotEmpty @Valid List<OrderItemDto> items
+// userId deliberately absent. It comes from the verified JWT, never from the request body -
+// otherwise any caller could order as any user just by changing a number.
+public record CreateOrderRequest(
+        @NotEmpty
+        @Valid
+        List<OrderItemDto> items
 ) {}

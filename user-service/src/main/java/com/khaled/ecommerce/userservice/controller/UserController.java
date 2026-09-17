@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.khaled.ecommerce.userservice.dto.LoginRequest;
+import com.khaled.ecommerce.userservice.dto.LoginResponse;
 import com.khaled.ecommerce.userservice.dto.RegisterRequest;
 import com.khaled.ecommerce.userservice.dto.UserResponse;
 import com.khaled.ecommerce.userservice.model.User;
+import com.khaled.ecommerce.userservice.security.JwtService;
 import com.khaled.ecommerce.userservice.service.UserService;
 
 import jakarta.validation.Valid;
@@ -22,30 +24,34 @@ import jakarta.validation.Valid;
 public class UserController {
 
     private final UserService userService;
+    private final JwtService jwtService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, JwtService jwtService) {
         this.userService = userService;
-    }
-
-    private static UserResponse toResponse(User user) {
-        return new UserResponse(user.getId(), user.getEmail(), user.getFirstName(), user.getLastName(), user.getCreatedAt(), user.getUpdatedAt());
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         User user = userService.registerUser(request.email(), request.password(), request.firstName(), request.lastName());
-        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(user));
+        return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.fromUser(user));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
-        return ResponseEntity.ok(toResponse(userService.getUser(id)));
+        return ResponseEntity.ok(UserResponse.fromUser(userService.getUser(id)));
     }
 
+
     @PostMapping("/login")
-    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
-        // Real session/token issuance (JWT) comes later, on purpose - this just proves the
-        // credentials are correct and hands back who you are.
-        return ResponseEntity.ok(toResponse(userService.login(request.email(), request.password())));
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        User user = userService.login(request.email(), request.password());
+        String token = jwtService.generateToken(user.getId(), user.getEmail());
+
+        return ResponseEntity.ok(new LoginResponse(
+                token,
+                "Bearer",
+                jwtService.getExpirationMinutes() * 60,
+                UserResponse.fromUser(user)));
     }
 }
