@@ -20,7 +20,9 @@ GitHub Actions
 ## System Architecture
 
 ```mermaid
-<img width="990" height="1578" alt="E-Commerce Microservices — System Design" src="https://github.com/user-attachments/assets/e221b2cd-8ef5-46e6-b028-ed540a0346af" />
+
+<img width="990" height="1578" alt="E-Commerce Microservices — System Design" src="https://github.com/user-attachments/assets/14fce462-89c4-4d54-ad33-02df2e3dbfc3" />
+
 
 ```
 
