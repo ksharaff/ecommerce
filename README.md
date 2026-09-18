@@ -19,12 +19,7 @@ GitHub Actions
 
 ## System Architecture
 
-```mermaid
-
 <img width="990" height="1578" alt="E-Commerce Microservices — System Design" src="https://github.com/user-attachments/assets/14fce462-89c4-4d54-ad33-02df2e3dbfc3" />
-
-
-```
 
 **Why a gateway.** Clients get one origin and one place where authentication happens. The
 gateway validates the JWT signature at the edge and forwards the verified user id as
